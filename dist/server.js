@@ -8,6 +8,7 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const page_routes_1 = __importDefault(require("./routes/page.routes"));
 const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const cookie_session_1 = __importDefault(require("cookie-session"));
 dotenv_1.default.config();
 // Create server
 const app = (0, express_1.default)();
@@ -15,6 +16,14 @@ const app = (0, express_1.default)();
 app.set('view engine', 'ejs');
 app.set('views', path_1.default.join(__dirname, '../src/views'));
 app.use((0, cookie_parser_1.default)(process.env.COOKIE_KEY));
+app.use((0, cookie_session_1.default)({
+    name: 'session',
+    keys: [
+        'ogilrjkbe12b',
+        'wevwgwwfeww1'
+    ],
+    maxAge: 3 * 60 * 1000
+}));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true })); // process form data
 // Routes

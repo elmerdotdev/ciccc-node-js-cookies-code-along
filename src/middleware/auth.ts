@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from 'express'
 
 // Check authentication for My Account
 export const checkAuth = (req: Request, res: Response, next: NextFunction) => {
-  const { authToken } = req.signedCookies
-  if (authToken === 'authenticated') {
+  console.log(req.session?.isAuthenticated)
+  if (req.session?.isAuthenticated) {
     next()
   } else {
     res.redirect('/login')
@@ -12,8 +12,7 @@ export const checkAuth = (req: Request, res: Response, next: NextFunction) => {
 
 // Check authToken cookie for Login page
 export const checkLoginAuth = (req: Request, res: Response, next: NextFunction) => {
-  const { authToken } = req.signedCookies
-  if (authToken === 'authenticated') {
+  if (req.session?.isAuthenticated) {
     res.redirect('/my-account')
   } else {
     next()

@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser'
 import pageRouter from './routes/page.routes'
 import path from 'path'
 import dotenv from 'dotenv'
+import cookieSession from 'cookie-session'
 dotenv.config()
 
 // Create server
@@ -12,6 +13,14 @@ const app = express()
 app.set('view engine', 'ejs')
 app.set('views', path.join(__dirname, '../src/views'))
 app.use(cookieParser(process.env.COOKIE_KEY))
+app.use(cookieSession({
+  name: 'session',
+  keys: [
+    'ogilrjkbe12b',
+    'wevwgwwfeww1'
+  ],
+  maxAge: 3 * 60 * 1000
+}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true })) // process form data
 

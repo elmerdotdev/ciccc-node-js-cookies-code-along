@@ -1,13 +1,17 @@
 import { Router, Request, Response} from 'express'
 import { checkAuth, checkLoginAuth } from '../middleware/auth'
+import bcrypt from 'bcrypt'
 
 const pageRouter = Router()
 
+const hashPassword = async (password: string, saltRounds: number): Promise<string> => {
+  const salt = await bcrypt.genSalt(saltRounds)
+  const hash = await bcrypt.hash(password, salt)
+  return hash
+}
+
 // In-memory database
-let users: User[] = [
-  { username: 'admin', email: 'admin@admin.com', password: 'admin123' },
-  { username: 'guest', email: 'guest@guest.com', password: 'guest123' }
-]
+let users: User[] = []
 
 // Home route
 pageRouter.get('/', (req: Request, res: Response) => {
@@ -20,15 +24,16 @@ pageRouter.get('/login', checkLoginAuth, (req: Request, res: Response) => {
 })
 
 // Process login route
-pageRouter.post('/login', (req: Request<{}, {}, UserRequestBody>, res: Response) => {
-  const { username, password } = req.body 
-  const found = users.find(user => user.username === username && user.password === password)
-  if (found) {
-    res.cookie('authToken', 'authenticated', {
-      maxAge: 3 * 60 * 1000, // 3 minutes
-      httpOnly: true,
-      signed: true
-    })
+pageRouter.post('/login', async (req: Request<{}, {}, UserRequestBody>, res: Response) => {
+  const { username, password } = req.body
+  const found = users.find(user => user.username === username)
+  if (found && await bcrypt.compare(password, found.password)) {
+    // res.cookie('authToken', 'authenticated', {
+    //   maxAge: 3 * 60 * 1000, // 3 minutes
+    //   httpOnly: true,
+    //   signed: true
+    // })
+    req.session!.isAuthenticated = true
     res.cookie('user_info', JSON.stringify({ // Convert object to string
       username: found.username,
       email: found.email
@@ -42,6 +47,27 @@ pageRouter.post('/login', (req: Request<{}, {}, UserRequestBody>, res: Response)
   }
 })
 
+// Register route
+pageRouter.get('/register', (req: Request, res: Response) => {
+  res.status(200).render('register')
+})
+
+// Register process route
+pageRouter.post('/register', async (req: Request<{}, {}, User>, res: Response) => {
+  try {
+    const { username, email, password } = req.body
+    const saltRounds: number = 12
+
+    const hashed: string = await hashPassword(password, saltRounds)
+    users.push({ username, password: hashed, email})
+    console.log(users)
+    res.status(201).send(`User added with password: ${hashed}`)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send('Internal server error')
+  }
+})
+
 // My Account route
 pageRouter.get('/my-account', checkAuth, (req: Request, res: Response) => {
   const { username, email } = JSON.parse(req.cookies.user_info) // Convert string to object
@@ -50,7 +76,7 @@ pageRouter.get('/my-account', checkAuth, (req: Request, res: Response) => {
 
 // Logout Route
 pageRouter.get('/logout', (req: Request, res: Response) => {
-  res.clearCookie('authToken')
+  req.session = null
   res.clearCookie('user_info')
   res.redirect('/')
 })
